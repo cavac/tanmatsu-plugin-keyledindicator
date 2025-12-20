@@ -7,5 +7,5 @@
     "type": "service",
     "api_version": 1,
     "permissions": ["input", "led"],
-    "autostart": true
+    "autostart": false
 }
