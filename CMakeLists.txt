@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(PLUGIN_NAME "key-led-indicator")
-set(TANMATSU_PLUGIN_SDK "/home/cavac/src/tanmatsu/tanmatsu-launcher/tools/plugin-sdk")
+set(TANMATSU_PLUGIN_SDK "${CMAKE_CURRENT_SOURCE_DIR}/../tanmatsu-launcher/tools/plugin-sdk")
 
 project(${PLUGIN_NAME} C)
 

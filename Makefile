@@ -3,7 +3,7 @@
 
 BUILD_DIR := build
 PLUGIN_NAME := key-led-indicator
-PLUGIN_SDK := /home/cavac/src/tanmatsu/tanmatsu-launcher/tools/plugin-sdk
+PLUGIN_SDK := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))/../tanmatsu-launcher/tools/plugin-sdk
 TOOLCHAIN := $(PLUGIN_SDK)/toolchain-plugin.cmake
 BADGEDIR := /tmp/mnt
 DEST := $(BADGEDIR)/int/plugins

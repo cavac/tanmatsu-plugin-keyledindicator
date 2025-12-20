@@ -9,8 +9,17 @@
 
 // Plugin state
 static int hook_id = -1;
+static int widget_id = -1;
 static volatile uint32_t led_off_time = 0;  // Tick when LED should turn off
 static volatile bool led_active = false;
+
+// Status widget callback - returns a red circle icon when running
+static plugin_icontext_t status_widget_callback(void* user_data) {
+    (void)user_data;
+    // Return a simple text indicator (no icon)
+    static char status_text[] = "(*)";
+    return (plugin_icontext_t){ .icon = NULL, .text = status_text };
+}
 
 // Plugin metadata
 static const plugin_info_t plugin_info = {
@@ -61,13 +70,25 @@ static int plugin_init(plugin_context_t* ctx) {
         return -1;
     }
 
-    plugin_log_info("keyled", "Key LED plugin initialized, hook_id=%d", hook_id);
+    // Register status widget to show plugin is running
+    widget_id = plugin_status_widget_register(status_widget_callback, NULL);
+    if (widget_id < 0) {
+        plugin_log_error("keyled", "Failed to register status widget");
+    }
+
+    plugin_log_info("keyled", "Key LED plugin initialized, hook_id=%d, widget_id=%d", hook_id, widget_id);
     return 0;
 }
 
 // Plugin cleanup
 static void plugin_cleanup(plugin_context_t* ctx) {
     (void)ctx;
+
+    // Unregister status widget
+    if (widget_id >= 0) {
+        plugin_status_widget_unregister(widget_id);
+        widget_id = -1;
+    }
 
     // Unregister input hook
     if (hook_id >= 0) {
