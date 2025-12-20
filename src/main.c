@@ -13,12 +13,16 @@ static int widget_id = -1;
 static volatile uint32_t led_off_time = 0;  // Tick when LED should turn off
 static volatile bool led_active = false;
 
-// Status widget callback - returns a red circle icon when running
-static plugin_icontext_t status_widget_callback(void* user_data) {
+// Status widget callback - draws a red circle when running
+// Draws to the left of x_right, returns width used
+static int status_widget_callback(pax_buf_t* buffer, int x_right, int y, int height, void* user_data) {
     (void)user_data;
-    // Return a simple text indicator (no icon)
-    static char status_text[] = "(*)";
-    return (plugin_icontext_t){ .icon = NULL, .text = status_text };
+    // Draw a red circle centered vertically in the status bar
+    int radius = 6;
+    int cx = x_right - radius - 2;  // Draw to the left of x_right with 2px margin
+    int cy = y + height / 2;
+    plugin_draw_circle(buffer, cx, cy, radius, 0xFFFF0000);  // Red circle
+    return radius * 2 + 4;  // Width = diameter + margins
 }
 
 // Plugin metadata
