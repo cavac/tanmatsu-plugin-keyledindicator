@@ -2,7 +2,7 @@
 # Wraps CMake build for convenience
 
 BUILD_DIR := build
-PLUGIN_NAME := blink-indicator
+PLUGIN_NAME := key-led-indicator
 PLUGIN_SDK := /home/cavac/src/tanmatsu/tanmatsu-launcher/tools/plugin-sdk
 TOOLCHAIN := $(PLUGIN_SDK)/toolchain-plugin.cmake
 BADGEDIR := /tmp/mnt

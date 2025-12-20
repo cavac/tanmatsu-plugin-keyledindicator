@@ -1,11 +1,11 @@
 {
-    "name": "Blink Indicator",
-    "slug": "blink-indicator",
+    "name": "Key LED Indicator",
+    "slug": "key-led-indicator",
     "version": "1.0.0",
     "author": "Tanmatsu Test",
-    "description": "Displays a blinking red circle in the status bar",
+    "description": "Blinks LED 5 white for 100ms on every keypress",
     "type": "service",
     "api_version": 1,
-    "permissions": ["display"],
+    "permissions": ["input", "led"],
     "autostart": false
 }
