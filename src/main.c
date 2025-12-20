@@ -79,7 +79,7 @@ static void plugin_service_run(plugin_context_t* ctx) {
         // Toggle blink state
         blink_state = !blink_state;
 
-        // Request display refresh (triggers status bar redraw)
+        // Request display refresh
         plugin_display_flush();
 
         // Wait 500ms
@@ -94,10 +94,10 @@ static const plugin_entry_t entry = {
     .get_info = get_info,
     .init = plugin_init,
     .cleanup = plugin_cleanup,
-    .menu_render = NULL,    // Not a menu plugin
-    .menu_select = NULL,    // Not a menu plugin
+    .menu_render = NULL,
+    .menu_select = NULL,
     .service_run = plugin_service_run,
-    .hook_event = NULL,     // Not a hook plugin
+    .hook_event = NULL,
 };
 
 // Register this plugin with the host
