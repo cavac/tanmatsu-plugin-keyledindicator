@@ -9,7 +9,6 @@
 // Plugin state
 static bool blink_state = false;
 static int widget_id = -1;
-static volatile bool running = true;
 
 // Plugin metadata
 static const plugin_info_t plugin_info = {
@@ -64,8 +63,6 @@ static int plugin_init(plugin_context_t* ctx) {
 static void plugin_cleanup(plugin_context_t* ctx) {
     (void)ctx;
 
-    running = false;
-
     if (widget_id >= 0) {
         plugin_status_widget_unregister(widget_id);
         widget_id = -1;
@@ -76,11 +73,9 @@ static void plugin_cleanup(plugin_context_t* ctx) {
 
 // Service main loop - runs in its own FreeRTOS task
 static void plugin_service_run(plugin_context_t* ctx) {
-    (void)ctx;
-
     plugin_log_info("blink", "Blink service starting...");
 
-    while (running) {
+    while (!plugin_should_stop(ctx)) {
         // Toggle blink state
         blink_state = !blink_state;
 
