@@ -6,12 +6,17 @@
 // Key presses are forwarded normally to the launcher.
 
 #include "tanmatsu_plugin.h"
+#include "pax_gfx.h"
 
 // Plugin state
+static plugin_context_t* plugin_ctx = NULL;
 static int hook_id = -1;
 static int widget_id = -1;
 static volatile uint32_t led_off_time = 0;  // Tick when LED should turn off
 static volatile bool led_active = false;
+
+// LED index used by this plugin (LEDs 2-5 are available for plugins)
+#define KEY_LED_INDEX 5
 
 // Status widget callback - draws a red circle when running
 // Draws to the left of x_right, returns width used
@@ -21,7 +26,7 @@ static int status_widget_callback(pax_buf_t* buffer, int x_right, int y, int hei
     int radius = 6;
     int cx = x_right - radius - 2;  // Draw to the left of x_right with 2px margin
     int cy = y + height / 2;
-    plugin_draw_circle(buffer, cx, cy, radius, 0xFFFF0000);  // Red circle
+    pax_draw_circle(buffer, 0xFFFF0000, cx, cy, radius);  // Red circle
     return radius * 2 + 4;  // Width = diameter + margins
 }
 
@@ -29,9 +34,9 @@ static int status_widget_callback(pax_buf_t* buffer, int x_right, int y, int hei
 static const plugin_info_t plugin_info = {
     .name = "Key LED Indicator",
     .slug = "key-led-indicator",
-    .version = "1.0.0",
+    .version = "1.1.0",
     .author = "Tanmatsu Test",
-    .description = "LED 5 blinks white on keypress",
+    .description = "Blinks LED on keypress",
     .api_version = TANMATSU_PLUGIN_API_VERSION,
     .type = PLUGIN_TYPE_SERVICE,
     .flags = 0,
@@ -48,12 +53,12 @@ static bool input_hook_callback(plugin_input_event_t* event, void* user_data) {
 
     // Only react to key press events (state == true), not releases
     if (event->state) {
-        // Turn on LED 5 white
-        plugin_led_set_pixel_rgb(5, 255, 255, 255);
-        plugin_led_send();
+        // Turn on LED white
+        asp_led_set_pixel_rgb(KEY_LED_INDEX, 255, 255, 255);
+        asp_led_send();
 
         // Set time to turn off LED (current time + 100ms)
-        led_off_time = plugin_get_tick_ms() + 100;
+        led_off_time = asp_plugin_get_tick_ms() + 100;
         led_active = true;
     }
 
@@ -63,71 +68,79 @@ static bool input_hook_callback(plugin_input_event_t* event, void* user_data) {
 
 // Plugin initialization
 static int plugin_init(plugin_context_t* ctx) {
-    (void)ctx;
+    asp_log_info("keyled", "Key LED plugin initializing...");
 
-    plugin_log_info("keyled", "Key LED plugin initializing...");
+    // Store context for LED claim/release
+    plugin_ctx = ctx;
+
+    // Claim LED for this plugin
+    if (!asp_plugin_led_claim(ctx, KEY_LED_INDEX)) {
+        asp_log_error("keyled", "Failed to claim LED %d", KEY_LED_INDEX);
+        return -1;
+    }
 
     // Register input hook
-    hook_id = plugin_input_hook_register(input_hook_callback, NULL);
+    hook_id = asp_plugin_input_hook_register(ctx, input_hook_callback, NULL);
     if (hook_id < 0) {
-        plugin_log_error("keyled", "Failed to register input hook");
+        asp_log_error("keyled", "Failed to register input hook");
+        asp_plugin_led_release(ctx, KEY_LED_INDEX);
         return -1;
     }
 
     // Register status widget to show plugin is running
-    widget_id = plugin_status_widget_register(status_widget_callback, NULL);
+    widget_id = asp_plugin_status_widget_register(ctx, status_widget_callback, NULL);
     if (widget_id < 0) {
-        plugin_log_error("keyled", "Failed to register status widget");
+        asp_log_error("keyled", "Failed to register status widget");
     }
 
-    plugin_log_info("keyled", "Key LED plugin initialized, hook_id=%d, widget_id=%d", hook_id, widget_id);
+    asp_log_info("keyled", "Key LED plugin initialized, hook_id=%d, widget_id=%d", hook_id, widget_id);
     return 0;
 }
 
 // Plugin cleanup
 static void plugin_cleanup(plugin_context_t* ctx) {
-    (void)ctx;
-
     // Unregister status widget
     if (widget_id >= 0) {
-        plugin_status_widget_unregister(widget_id);
+        asp_plugin_status_widget_unregister(widget_id);
         widget_id = -1;
     }
 
     // Unregister input hook
     if (hook_id >= 0) {
-        plugin_input_hook_unregister(hook_id);
+        asp_plugin_input_hook_unregister(hook_id);
         hook_id = -1;
     }
 
-    // Turn off LED 5
-    plugin_led_set_pixel_rgb(5, 0, 0, 0);
-    plugin_led_send();
+    // Turn off LED and release claim
+    asp_led_set_pixel_rgb(KEY_LED_INDEX, 0, 0, 0);
+    asp_led_send();
+    asp_plugin_led_release(ctx, KEY_LED_INDEX);
 
-    plugin_log_info("keyled", "Key LED plugin cleaned up");
+    plugin_ctx = NULL;
+    asp_log_info("keyled", "Key LED plugin cleaned up");
 }
 
 // Service main loop - monitors LED timing
 static void plugin_service_run(plugin_context_t* ctx) {
-    plugin_log_info("keyled", "Key LED service starting...");
+    asp_log_info("keyled", "Key LED service starting...");
 
-    while (!plugin_should_stop(ctx)) {
+    while (!asp_plugin_should_stop(ctx)) {
         // Check if LED needs to be turned off
         if (led_active) {
-            uint32_t now = plugin_get_tick_ms();
+            uint32_t now = asp_plugin_get_tick_ms();
             if (now >= led_off_time) {
-                // Turn off LED 5
-                plugin_led_set_pixel_rgb(5, 0, 0, 0);
-                plugin_led_send();
+                // Turn off LED
+                asp_led_set_pixel_rgb(KEY_LED_INDEX, 0, 0, 0);
+                asp_led_send();
                 led_active = false;
             }
         }
 
         // Short sleep to avoid busy loop
-        plugin_delay_ms(10);
+        asp_plugin_delay_ms(10);
     }
 
-    plugin_log_info("keyled", "Key LED service stopped");
+    asp_log_info("keyled", "Key LED service stopped");
 }
 
 // Plugin entry point structure
