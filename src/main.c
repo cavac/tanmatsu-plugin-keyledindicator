@@ -48,11 +48,25 @@ static const plugin_info_t* get_info(void) {
 }
 
 // Input hook callback - called for every input event
-static bool input_hook_callback(plugin_input_event_t* event, void* user_data) {
+static bool input_hook_callback(asp_input_event_t* event, void* user_data) {
     (void)user_data;
 
-    // Only react to key press events (state == true), not releases
-    if (event->state) {
+    bool is_press = false;
+    switch (event->type) {
+        case ASP_INPUT_EVENT_TYPE_NAVIGATION:
+            is_press = event->args_navigation.state;
+            break;
+        case ASP_INPUT_EVENT_TYPE_KEYBOARD:
+            is_press = true;  // Keyboard events fire only on character input
+            break;
+        case ASP_INPUT_EVENT_TYPE_SCANCODE:
+            is_press = (event->args_scancode.scancode & ASP_INPUT_SCANCODE_RELEASE_MODIFIER) == 0;
+            break;
+        default:
+            break;
+    }
+
+    if (is_press) {
         // Turn on LED white
         asp_led_set_pixel_rgb(KEY_LED_INDEX, 255, 255, 255);
         asp_led_send();
@@ -151,7 +165,6 @@ static const plugin_entry_t entry = {
     .menu_render = NULL,
     .menu_select = NULL,
     .service_run = plugin_service_run,
-    .hook_event = NULL,
 };
 
 // Register this plugin with the host
